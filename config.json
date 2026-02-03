@@ -1,0 +1,15 @@
+{
+    "check_interval": 600,
+    "notification_sets": [
+        {
+            "id": 1769881633722,
+            "name": "3月キャンプ",
+            "start_date": "2026-03-27",
+            "nights": 1,
+            "auto_reserve": false,
+            "adults": 2,
+            "children": 0,
+            "preschoolers": 0
+        }
+    ]
+}

@@ -1,0 +1,7 @@
+.env
+chrome_data/
+logs/
+__pycache__/
+*.pyc
+.DS_Store
+*.png

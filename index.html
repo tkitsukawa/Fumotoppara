@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ふもとっぱら予約監視設定</title>
+    <style>
+        body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; color: #333; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .reserve-link { display: inline-block; background: #409eff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; margin-bottom: 20px; }
+        .reserve-link:hover { background: #66b1ff; }
+        
+        /* 予約セットリスト */
+        .set-list { list-style: none; padding: 0; }
+        .set-item { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #fff; position: relative; }
+        .set-item.auto-reserve { border-left: 5px solid #ff4d4d; }
+        .set-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
+        .set-title { font-size: 1.2rem; font-weight: bold; color: #2c3e50; margin: 0; }
+        .set-actions { display: flex; gap: 10px; }
+        .set-details { display: flex; gap: 20px; color: #666; font-size: 0.9rem; flex-wrap: wrap; }
+        .set-detail-item { display: flex; align-items: center; gap: 5px; }
+        .badge-auto { background: #ff4d4d; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        
+        /* フォーム要素 */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        input[type="date"] { width: auto; min-width: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        input[type="checkbox"] { transform: scale(1.5); margin-right: 10px; }
+        
+        .btn { cursor: pointer; padding: 8px 16px; border: none; border-radius: 4px; font-size: 0.9rem; transition: background 0.2s; }
+        .btn-primary { background: #409eff; color: white; }
+        .btn-danger { background: #f56c6c; color: white; }
+        .btn-success { background: #67c23a; color: white; }
+        .btn-warning { background: #e6a23c; color: white; }
+        .btn-secondary { background: #909399; color: white; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        /* 新規追加・編集フォーム */
+        .add-form { background: #f0f9eb; border: 1px solid #e1f3d8; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .edit-mode { background: #fff6e0; border-color: #faecd8; }
+        .auto-reserve-group { background: #ffe6e6; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc; margin-top: 15px; }
+        .warning-text { color: red; font-size: 0.9rem; font-weight: bold; margin-top: 5px; }
+        
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>🏕️ ふもとっぱら予約監視システム</h1>
+
+        <a href="https://reserve.fumotoppara.net/reserved/reserved-calendar-list" target="_blank" class="reserve-link">
+            📅 予約サイトを開く
+        </a>
+
+        <div class="container">
+            <h2>👀 監視中の予約セット</h2>
+            <p v-if="config.notification_sets.length === 0">現在、監視中のセットはありません。</p>
+            <ul class="set-list">
+                <li v-for="(set, index) in config.notification_sets" :key="set.id" class="set-item" :class="{ 'auto-reserve': set.auto_reserve }">
+                    <div class="set-header">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <h3 class="set-title">{{ set.name }}</h3>
+                            <span v-if="set.auto_reserve" class="badge-auto">自動予約ON</span>
+                        </div>
+                        <div class="set-actions">
+                            <button @click="editSet(index)" class="btn btn-warning">編集</button>
+                            <button @click="removeSet(index)" class="btn btn-danger">削除</button>
+                        </div>
+                    </div>
+                    <div class="set-details">
+                        <div class="set-detail-item">📅 開始日: <strong>{{ set.start_date }}</strong></div>
+                        <div class="set-detail-item">🌙 泊数: <strong>{{ set.nights }}泊</strong></div>
+                        <div class="set-detail-item" v-if="set.auto_reserve">
+                            👥 人数: 大人{{ set.adults }} / 小学生{{ set.children }} / 幼児{{ set.preschoolers }}
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <div class="container add-form" :class="{ 'edit-mode': isEditing }">
+            <h2>{{ isEditing ? '✏️ 予約セットを編集' : '➕ 新しい予約セットを追加' }}</h2>
+            <div class="form-group">
+                <label>セット名 (通知時に表示されます)</label>
+                <input type="text" v-model="form.name" placeholder="例: 2月連休キャンプ">
+            </div>
+            <div style="display: flex; gap: 20px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>開始日</label>
+                    <input type="date" v-model="form.start_date">
+                    <p v-if="isNearDate" class="warning-text">⚠️ 7日以内の日付です。キャンセル料が発生する可能性があります。</p>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>泊数 (連泊)</label>
+                    <input type="number" v-model.number="form.nights" min="1" max="10">
+                </div>
+            </div>
+
+            <div class="auto-reserve-group">
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" v-model="form.auto_reserve">
+                        <span style="font-size: 1.1rem; color: #d32f2f;">🔥 自動予約モードを有効にする</span>
+                    </label>
+                    <p style="font-size: 0.9rem; color: #666; margin-top: 5px;">
+                        空きが見つかり次第、自動で予約処理を行います。<br>
+                        <strong>※注意: 誤操作による予約を防ぐため、設定内容を十分確認してください。</strong>
+                    </p>
+                </div>
+
+                <div v-if="form.auto_reserve" style="display: flex; gap: 20px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>大人 (中学生以上)</label>
+                        <input type="number" v-model.number="form.adults" min="1" max="10">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>小学生</label>
+                        <input type="number" v-model.number="form.children" min="0" max="10">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>未就学児</label>
+                        <input type="number" v-model.number="form.preschoolers" min="0" max="10">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button @click="saveSet" class="btn" :class="isEditing ? 'btn-warning' : 'btn-success'" :disabled="!isValid">
+                    {{ isEditing ? '更新して保存' : '追加して保存' }}
+                </button>
+                <button v-if="isEditing" @click="cancelEdit" class="btn btn-secondary">キャンセル</button>
+            </div>
+        </div>
+        
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                config: { notification_sets: [], check_interval: 600 },
+                form: {
+                    id: null,
+                    name: '',
+                    start_date: '',
+                    nights: 1,
+                    auto_reserve: false,
+                    adults: 1,
+                    children: 0,
+                    preschoolers: 0
+                },
+                isEditing: false,
+                editingIndex: -1
+            },
+            computed: {
+                isValid() {
+                    if (!this.form.name || !this.form.start_date || this.form.nights <= 0) return false;
+                    if (this.form.auto_reserve) {
+                        return this.form.adults > 0; // 大人は最低1人必要
+                    }
+                    return true;
+                },
+                isNearDate() {
+                    if (!this.form.start_date) return false;
+                    const today = new Date();
+                    const target = new Date(this.form.start_date);
+                    const diffTime = target - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    return diffDays >= 0 && diffDays <= 7;
+                }
+            },
+            mounted() {
+                this.loadConfig();
+            },
+            methods: {
+                loadConfig() {
+                    fetch('/api/config')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.config = data;
+                            if (!this.config.notification_sets) this.config.notification_sets = [];
+                        });
+                },
+                saveConfig() {
+                    fetch('/api/config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.config)
+                    })
+                    .then(() => alert('設定を保存しました！次回チェック時から反映されます。'));
+                },
+                saveSet() {
+                    if (this.isValid) {
+                        if (this.isEditing) {
+                            const id = this.form.id;
+                            this.config.notification_sets.splice(this.editingIndex, 1, { ...this.form });
+                            this.isEditing = false;
+                            this.editingIndex = -1;
+                        } else {
+                            const id = Date.now();
+                            this.config.notification_sets.push({ ...this.form, id });
+                        }
+                        
+                        this.saveConfig();
+                        this.resetForm();
+                    }
+                },
+                editSet(index) {
+                    this.isEditing = true;
+                    this.editingIndex = index;
+                    this.form = { 
+                        ...this.config.notification_sets[index],
+                        // デフォルト値の補完
+                        auto_reserve: this.config.notification_sets[index].auto_reserve || false,
+                        adults: this.config.notification_sets[index].adults || 1,
+                        children: this.config.notification_sets[index].children || 0,
+                        preschoolers: this.config.notification_sets[index].preschoolers || 0
+                    };
+                    document.querySelector('.add-form').scrollIntoView({ behavior: 'smooth' });
+                },
+                cancelEdit() {
+                    this.isEditing = false;
+                    this.editingIndex = -1;
+                    this.resetForm();
+                },
+                removeSet(index) {
+                    if (confirm('本当に削除しますか？')) {
+                        this.config.notification_sets.splice(index, 1);
+                        this.saveConfig();
+                        if (this.isEditing && this.editingIndex === index) {
+                            this.cancelEdit();
+                        }
+                    }
+                },
+                resetForm() {
+                    this.form = {
+                        id: null,
+                        name: '',
+                        start_date: '',
+                        nights: 1,
+                        auto_reserve: false,
+                        adults: 1,
+                        children: 0,
+                        preschoolers: 0
+                    };
+                }
+            }
+        });
+    </script>
+</body>
+</html>
