@@ -3,8 +3,10 @@ import json
 import os
 
 PORT = 8000
-CONFIG_FILE = 'config.json'
-LOG_DIR = 'logs'
+# プロジェクトのルートディレクトリを取得 (srcの親ディレクトリ)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG_FILE = os.path.join(BASE_DIR, 'config', 'config.json')
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
 
 class ConfigHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -49,6 +51,14 @@ class ConfigHandler(SimpleHTTPRequestHandler):
             return
 
 if __name__ == '__main__':
+    # webディレクトリをドキュメントルートにするために移動
+    web_dir = os.path.join(BASE_DIR, 'web')
+    if os.path.exists(web_dir):
+        os.chdir(web_dir)
+        print(f"ドキュメントルートを {web_dir} に設定しました。")
+    else:
+        print(f"警告: webディレクトリ ({web_dir}) が見つかりません。")
+
     print(f"設定画面サーバーを起動しました。ブラウザで http://localhost:{PORT} にアクセスしてください。")
     print("停止するには Ctrl+C を押してください。")
     httpd = HTTPServer(('localhost', PORT), ConfigHandler)

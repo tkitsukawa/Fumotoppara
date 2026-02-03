@@ -13,8 +13,11 @@ import csv
 import re
 from dotenv import load_dotenv
 
+# プロジェクトのルートディレクトリを取得 (srcの親ディレクトリ)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # .envファイルから情報を読み込む
-load_dotenv()
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS')
 PASSWORD = os.getenv('PASSWORD')
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
@@ -28,7 +31,8 @@ previous_ok_sets = set()
 
 def load_config():
     try:
-        with open('config.json', 'r', encoding='utf-8') as f:
+        config_path = os.path.join(BASE_DIR, 'config', 'config.json')
+        with open(config_path, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
         print(f"設定ファイルの読み込みに失敗しました: {e}")
@@ -73,7 +77,7 @@ def parse_status(status_text):
         return '×', 0
 
 def save_log_csv(all_statuses):
-    log_dir = "logs"
+    log_dir = os.path.join(BASE_DIR, "logs")
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     today_str = datetime.datetime.now().strftime('%Y-%m-%d')
@@ -347,7 +351,10 @@ def perform_auto_reservation(driver, n_set):
         send_line_message(error_msg)
         # スクリーンショット保存
         try:
-            driver.save_screenshot('reserve_error.png')
+            log_dir = os.path.join(BASE_DIR, "logs")
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+            driver.save_screenshot(os.path.join(log_dir, 'reserve_error.png'))
         except:
             pass
         return False
@@ -361,8 +368,7 @@ def check_calendar_once():
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--lang=ja-JP')
     
-    current_dir = os.getcwd()
-    user_data_dir = os.path.join(current_dir, 'chrome_data')
+    user_data_dir = os.path.join(BASE_DIR, 'chrome_data')
     options.add_argument(f'--user-data-dir={user_data_dir}')
     options.add_argument('--profile-directory=Default')
 

@@ -8,8 +8,11 @@ import os
 from dotenv import load_dotenv
 import time
 
+# プロジェクトのルートディレクトリを取得 (srcの親ディレクトリ)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # .envファイルからログイン情報を読み込む
-load_dotenv()
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS')
 PASSWORD = os.getenv('PASSWORD')
 
@@ -24,9 +27,8 @@ def login_and_check():
     options.add_argument('--lang=ja-JP')
     
     # ユーザーデータディレクトリの設定（ログイン状態を保持するため）
-    # カレントディレクトリに 'chrome_data' というフォルダを作ってそこに保存する
-    current_dir = os.getcwd()
-    user_data_dir = os.path.join(current_dir, 'chrome_data')
+    # プロジェクトルートに 'chrome_data' というフォルダを作ってそこに保存する
+    user_data_dir = os.path.join(BASE_DIR, 'chrome_data')
     options.add_argument(f'--user-data-dir={user_data_dir}')
     options.add_argument('--profile-directory=Default')
 
@@ -122,7 +124,10 @@ def login_and_check():
             
             # カレンダーが表示された状態でスクリーンショット
             print("3月のカレンダーを保存します...")
-            driver.save_screenshot('calendar_march.png')
+            log_dir = os.path.join(BASE_DIR, 'logs')
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+            driver.save_screenshot(os.path.join(log_dir, 'calendar_march.png'))
             print("スクリーンショット 'calendar_march.png' を保存しました。")
             
             # 日付ごとの状況を取得（まだ詳細は実装せず、まずはHTML構造を見る）

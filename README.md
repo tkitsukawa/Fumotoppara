@@ -37,6 +37,17 @@
 - Chromeブラウザ
 - LINEアカウント（通知受取用）
 
+## プロジェクト構成
+```
+Fumotoppara/
+├── src/            # Pythonソースコード (monitor.py, login.pyなど)
+├── web/            # 設定画面用HTML
+├── config/         # 設定ファイル (config.json)
+├── logs/           # 実行ログ・スクリーンショット
+├── docs/           # ドキュメント・画像
+└── chrome_data/    # Chromeのユーザーデータ (自動生成)
+```
+
 ## セットアップ手順
 
 ### 1. 準備
@@ -45,7 +56,7 @@
 pip install selenium webdriver_manager python-dotenv requests
 ```
 
-`.env` ファイルを作成し、以下の情報を記入してください。（既に作成済みの場合はそのままでOKです）
+プロジェクトルートに `.env` ファイルを作成し、以下の情報を記入してください。（既に作成済みの場合はそのままでOKです）
 ```
 EMAIL_ADDRESS=あなたのメールアドレス
 PASSWORD=あなたのパスワード
@@ -56,18 +67,19 @@ LINE_USER_ID=あなたのユーザーID
 ### 2. 初回ログイン（必須）
 最初に一度だけ、以下のコマンドを実行してログイン情報を保存させます。
 ```bash
-python3 fumotoppara_login.py
+python3 src/fumotoppara_login.py
 ```
 ※ブラウザが起動し、自動的にログインしてカレンダー画面が表示されれば成功です。
 
 ## 使い方
 
 このシステムは「設定画面」と「監視プログラム」の2つで構成されています。
+**必ずプロジェクトのルートディレクトリ（Fumotopparaフォルダ）でコマンドを実行してください。**
 
 ### A. 設定画面を開く（予約セットの管理・ログ閲覧）
 1. 設定画面用のサーバーを起動します。
    ```bash
-   python3 settings_server.py
+   python3 src/settings_server.py
    ```
 2. ブラウザで [http://localhost:8000](http://localhost:8000) にアクセスします。
 3. **予約セットの追加:** 「セット名」「開始日」「泊数」を入力して追加します。
@@ -78,7 +90,7 @@ python3 fumotoppara_login.py
 1. 新しいターミナルを開きます（設定画面用とは別で開いてください）。
 2. 以下のコマンドを実行して、監視をスタートします。
    ```bash
-   python3 fumotoppara_monitor.py
+   python3 src/fumotoppara_monitor.py
    ```
 3. プログラムが動き出し、定期的に（デフォルトでは10分ごと）空き状況をチェックします。
    * 登録された予約セットの日付が含まれる月を自動的に巡回してチェックします。
