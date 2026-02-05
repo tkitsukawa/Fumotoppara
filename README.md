@@ -23,13 +23,13 @@
 
 ### スクリーンショット
 **カレンダー画面（空きチェック）**
-![カレンダー監視](images/calendar_march.png)
+![カレンダー監視](docs/images/calendar_march.png)
 
 **詳細画面（予約情報）**
-![予約詳細](images/detail_page.png)
+![予約詳細](docs/images/detail_page.png)
 
 **ポップアップ確認**
-![ポップアップ確認](images/popup_check.png)
+![ポップアップ確認](docs/images/popup_check.png)
 
 ## 必要なもの
 - PC (Mac/Windows/Linux)
